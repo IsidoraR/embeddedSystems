@@ -26,10 +26,9 @@ void read_dht11_dat()
 	digitalWrite( DHTPIN, LOW );
 	delay( 18 );
 	// pull it up for 40 microseconds
-	digitalWrite( DHTPIN, HIGH );
+	pinMode( DHTPIN, INPUT );
 	delayMicroseconds( 40 );
 	// prepare to read the pin
-	pinMode( DHTPIN, INPUT );
  
 	// detect change and read data
 	for ( i = 0; i < MAXTIMINGS; i++ )
@@ -59,9 +58,16 @@ void read_dht11_dat()
 			j++;
 		}
 	}
- 
-	// verify checksum with reading data.
 
+	// verify checksum with reading data.
+	uint32_t sum1= dht11_dat[0]+dht11_dat[1]+dht11_dat[2]+dht11_dat[3];
+	printf("Checksum of first four bytes: %X \n\r", sum1);
+	printf("Checksum byte value: %X \n\r",dht11_dat[4] );
+
+	for(int i=0; i<5; i++)
+	{
+		printf("Byte %i, value: %x \n\r", i, dht11_dat[i]);
+	}
 	//print humidity and temperature
 
 	//print time
