@@ -27,10 +27,10 @@ static volatile int currentReadingBitIdx = 0;
 static int prevBitHighTime;
 static unsigned int microsCurrentRisingEdge = 0;
 static volatile int microsPreviousRisingEdge = 0;
-static uint8_t bitsRcvd[40];
+static uint8_t bitsRcvd[41];
 static uint8_t dht11_dat[5] = {0,0,0,0,0};
 static volatile bool readReady = false;
-static uint16_t measuredBitHighTime[40];
+static int  measuredBitHighTime[40];
 
 const int SENSOR_PIN_NUM = 7;
 const int RESPONSE_TIME_US = 80;
@@ -93,8 +93,8 @@ int main()
 	{
 		printf("\nSample Number: %i\n", readIdx);
 		
-		memset((int *)bitsRcvd, -1, TOTAL_BITS_PER_READ * sizeof(int));
-		memset((int *)measuredBitHighTime, -1, TOTAL_BITS_PER_READ * sizeof(int));
+		memset((int *)bitsRcvd, 0, TOTAL_BITS_PER_READ * sizeof(int));
+		memset((int *)measuredBitHighTime, 0, TOTAL_BITS_PER_READ * sizeof(int));
 
 		readReady = false;
 	
@@ -157,7 +157,7 @@ void sensorReadISR()
 				currentReadingBitIdx = 0;				
 				microsPreviousRisingEdge = 0;				
 				currentState = INPUT_JUST_ENABLED;			
-				digitalWrite(SENSOR_PIN_NUM, HIGH);
+				//digitalWrite(SENSOR_PIN_NUM, HIGH);
 				pinMode(SENSOR_PIN_NUM, INPUT);
 			}
 			break;
@@ -176,25 +176,26 @@ void sensorReadISR()
 			break;
 
 		case BIT_READ_RISING:
-			{ 
+			{
+			microsCurrentRisingEdge = micros();
 			// If this is the first bit, we have no reference for a differential reading.
 			// The read time has been set, so break and wait for the next rising edge
 			// to determine how long this cycle was high.
+
+
+			
+			// Get the time when this edge occurred
+						
+			// Get the amount of uS the bit-determining pulse was high.
+			// Subtract 50us, the pre-bit delay.
+			prevBitHighTime = microsCurrentRisingEdge - microsPreviousRisingEdge;
+			microsPreviousRisingEdge = microsCurrentRisingEdge;
+			
 			if (currentReadingBitIdx == 0)
 			{
 				++currentReadingBitIdx;
 				break;
 			}
-
-			
-			// Get the time when this edge occurred
-			microsCurrentRisingEdge = micros();
-			
-			// Get the amount of uS the bit-determining pulse was high.
-			// Subtract 50us, the pre-bit delay.
-			prevBitHighTime = microsCurrentRisingEdge - microsPreviousRisingEdge;
-			microsPreviousRisingEdge = microsCurrentRisingEdge;
-
 						
 			// Distinguish the bit using prevBitHighTime
 			// Don't forget there might be error if the time is too large.
@@ -218,7 +219,7 @@ void sensorReadISR()
 			// If it is, then the current bit must be a 1.
 			// The side effect to this is that if this bit is 
 			// held too long, we won't be able to tell.
-			if (currentReadingBitIdx >= 40)
+			if (currentReadingBitIdx >= 41)
 			{
 				delay(40);
 				currentState = READ_COMPLETE;
@@ -290,7 +291,7 @@ int generateChecksum(uint8_t* bits_rcvd)
 	for(int sum_idx= 0; sum_idx < 40; ++sum_idx)
 	{
 		int byte_num = (sum_idx/8);
-		int bit_num = (sum_idx % 8);
+		int bit_num = 8-(sum_idx % 8);
 
 //		printf("Bit %d value: %d \n\r",sum_idx, bits_rcvd[sum_idx]);
 		printf("bit %d tume: %d \n\r", sum_idx, measuredBitHighTime[sum_idx]);
@@ -329,7 +330,11 @@ void analyzeAndPrintResults(int * bitsRcvd, const char * errorString, const char
 	// Check checksum
 	uint8_t checksum_generated = generateChecksum(bitsRcvd);
 	uint8_t checksum_read = dht11_dat[4];
-
+	
+	humid_int = dht11_dat[0];
+	humid_dec = dht11_dat[1];
+	temp_int = dht11_dat[2];
+	temp_dec  = dht11_dat[3];
 	
 	// Print the results
 	if(checksum_generated == checksum_read)
@@ -337,15 +342,14 @@ void analyzeAndPrintResults(int * bitsRcvd, const char * errorString, const char
 		printf("Temp: %d.%d\n", temp_int, temp_dec);
 		printf("Humidity: %d.%d\n", humid_int, humid_dec);
 	}
-	else
-	{
-		for(int i=0; i<5; i++)
+		
+	for(int i=0; i<5; i++)
 		{
 			printf("Byte %d value %X \n\r", i, dht11_dat[i]);
 	
+	
 		}
-
-	}
+		
 	// Write the results to a file
 	writeResultsToFile(temp_int, temp_dec, humid_int, humid_dec, checksum_read, checksum_generated, sensorInteractionMode, timeAsString, errorString);
 }
