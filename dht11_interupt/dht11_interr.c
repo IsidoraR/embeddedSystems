@@ -249,11 +249,13 @@ void sensorReadISR()
 void setupGpio()
 {
 	// Call setup
+	wiringPiSetupGpio();
 	
 	// Reserve the GPIO pin
-	
+	pinMode(SENSOR_PIN_NUM, OUTPUT);
 	// Set the line high by default
-	wiringPiSetup();	
+	digitalWrite(SENSOR_PIN_NUM, HIGH);
+		
 
 	pullUpDnControl(SENSOR_PIN_NUM, PUD_UP);
 }
@@ -282,25 +284,36 @@ int arrAndOffsetToInt(int * bits_rcvd, int offset)
 /*
  * Generates a checksum from the humidity and temp readings.
  */
-int generateChecksum(uint8_t* bits_rcvd)
+int generateChecksum(int* bits_rcvd)
 {
 	// Use uint8_t variables to ensure that the result of each addition
 	// is only eight bits.
 	uint8_t checksum;
 	memset(dht11_dat, 0, 5);
-	for(int sum_idx= 0; sum_idx < 40; ++sum_idx)
-	{
+	for(int sum_idx= 0; sum_idx < 40; sum_idx = sum_idx + 8)
+	{       int firstDigit_sum = 0;
+		int secondDigit_sum = 0;
 		int byte_num = (sum_idx/8);
-		int bit_num = 8-(sum_idx % 8);
-
+		//int bit_num = 8-(sum_idx % 8);
+		firstDigit_sum = 16*((8*bits_rcvd[sum_idx])+(4*bits_rcvd[sum_idx+1])+(2*bits_rcvd[sum_idx+2])+(bits_rcvd[sum_idx+3]));
+		secondDigit_sum = (8*bits_rcvd[sum_idx+4])+(4*bits_rcvd[sum_idx+5])+(2*bits_rcvd[sum_idx+6])+(bits_rcvd[sum_idx+7]);
 //		printf("Bit %d value: %d \n\r",sum_idx, bits_rcvd[sum_idx]);
-		printf("bit %d tume: %d \n\r", sum_idx, measuredBitHighTime[sum_idx]);
-
-		dht11_dat[byte_num] |= (bits_rcvd[sum_idx]<<bit_num);
+		printf("bit %d time: %d \n\r", sum_idx, measuredBitHighTime[sum_idx]);
+		printf("bit %d time: %d \n\r", sum_idx+1, measuredBitHighTime[sum_idx+1]);
+		printf("bit %d time: %d \n\r", sum_idx+2, measuredBitHighTime[sum_idx+2]);
+		printf("bit %d time: %d \n\r", sum_idx+3, measuredBitHighTime[sum_idx+3]);
+		printf("bit %d time: %d \n\r", sum_idx+4, measuredBitHighTime[sum_idx+4]);
+		printf("bit %d time: %d \n\r", sum_idx+5, measuredBitHighTime[sum_idx+5]);
+		printf("bit %d time: %d \n\r", sum_idx+6, measuredBitHighTime[sum_idx+6]);
+		printf("bit %d time: %d \n\r", sum_idx+7, measuredBitHighTime[sum_idx+7]);
+		
+		dht11_dat[byte_num] = firstDigit_sum + secondDigit_sum;
+		//dht11_dat[byte_num] |= (bits_rcvd[sum_idx]<<bit_num);
 
 	}
 
-	checksum = ((dht11_dat[0]+dht11_dat[1]+dht11_dat[2]+dht11_dat[3])&0xFF);
+	//checksum = ((dht11_dat[0]+dht11_dat[1]+dht11_dat[2]+dht11_dat[3])&0xFF);
+	checksum = (dht11_dat[0]+dht11_dat[1]+dht11_dat[2]+dht11_dat[3]);
 	return checksum;
 }
 
@@ -342,10 +355,12 @@ void analyzeAndPrintResults(int * bitsRcvd, const char * errorString, const char
 		printf("Temp: %d.%d\n", temp_int, temp_dec);
 		printf("Humidity: %d.%d\n", humid_int, humid_dec);
 	}
+	printf("Temp: %d.%d\n", temp_int, temp_dec);
+	printf("Humidity: %d.%d\n", humid_int, humid_dec);
 		
 	for(int i=0; i<5; i++)
 		{
-			printf("Byte %d value %X \n\r", i, dht11_dat[i]);
+			printf("Byte %d value %d \n\r", i, dht11_dat[i]);
 	
 	
 		}
