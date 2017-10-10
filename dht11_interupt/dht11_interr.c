@@ -330,7 +330,9 @@ void analyzeAndPrintResults(int * bitsRcvd, const char * errorString, const char
 	// Check checksum
 	uint8_t checksum_generated = generateChecksum(bitsRcvd);
 	uint8_t checksum_read = dht11_dat[4];
-	
+
+	if(checksum_read == checksum_generated)
+		readSuccessful = true;	
 	humid_int = dht11_dat[0];
 	humid_dec = dht11_dat[1];
 	temp_int = dht11_dat[2];
