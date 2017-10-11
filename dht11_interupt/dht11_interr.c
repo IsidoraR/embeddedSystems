@@ -254,6 +254,9 @@ void setupGpio()
 	
 	// Set the line high by default
 	wiringPiSetup();	
+	//wiringPiSetupGpio();
+	//pinMode(SENSOR_PIN_NUM, OUTPUT);
+	//digitalWrite(SENSOR_PIN_NUM, HIGH);
 
 	pullUpDnControl(SENSOR_PIN_NUM, PUD_UP);
 }
@@ -294,7 +297,7 @@ int generateChecksum(uint8_t* bits_rcvd)
 		int bit_num = 7-(sum_idx % 8);
 
 //		printf("Bit %d value: %d \n\r",sum_idx, bits_rcvd[sum_idx]);
-		printf("bit %d tume: %d \n\r", sum_idx, measuredBitHighTime[sum_idx]);
+		printf("bit %d time: %d \n\r", sum_idx+1, measuredBitHighTime[sum_idx+1]);
 
 		dht11_dat[byte_num] |= (bits_rcvd[sum_idx]<<bit_num);
 
