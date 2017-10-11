@@ -254,6 +254,9 @@ void setupGpio()
 	
 	// Set the line high by default
 	wiringPiSetup();	
+	//wiringPiSetupGpio();
+	//pinMode(SENSOR_PIN_NUM, OUTPUT);
+	//digitalWrite(SENSOR_PIN_NUM, HIGH);
 
 	pullUpDnControl(SENSOR_PIN_NUM, PUD_UP);
 }
